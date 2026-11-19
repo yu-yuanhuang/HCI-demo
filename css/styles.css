@@ -1,0 +1,275 @@
+/* MicroLoan (微微貸) - Intelligent HCI Prototype Stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --primary-dark: #1e3a8a;
+  --success: #10b981;
+  --success-light: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-light: #fffbeb;
+  --danger: #ef4444;
+  --danger-light: #fef2f2;
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+}
+
+body {
+  font-family: 'Noto Sans TC', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color: #1e293b;
+  background-color: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Touch targets at least 44px for primary interaction buttons & inputs */
+button:not(.compact-btn):not(.step-dot), 
+input:not([type="checkbox"]):not([type="range"]), 
+select, 
+textarea, 
+.touch-target {
+  min-height: 44px;
+}
+
+/* Base font size >= 16px as stated in specification */
+.body-text, p, label, input, select {
+  font-size: 16px;
+}
+
+/* Mobile Frame simulation */
+.phone-viewport-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1.5rem 1rem 3rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.phone-mockup {
+  width: 100%;
+  max-width: 430px;
+  min-height: 860px;
+  background: #ffffff;
+  border-radius: 46px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 12px #0f172a, 0 0 0 14px #334155;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.phone-mockup.fullscreen-mode {
+  max-width: 800px;
+  border-radius: 24px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
+  min-height: 720px;
+}
+
+.phone-notch {
+  width: 140px;
+  height: 28px;
+  background: #0f172a;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.notch-camera {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+.notch-speaker {
+  width: 48px;
+  height: 4px;
+  border-radius: 3px;
+  background: #334155;
+}
+
+.phone-status-bar {
+  height: 44px;
+  padding: 8px 24px 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  z-index: 40;
+  user-select: none;
+}
+
+.phone-screen-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  padding-bottom: 24px;
+  position: relative;
+}
+
+/* Custom scrollbars */
+.phone-screen-content::-webkit-scrollbar,
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.phone-screen-content::-webkit-scrollbar-thumb,
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* XAI Highlight Cards */
+.xai-card {
+  border-left: 4px solid var(--primary);
+  background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
+}
+
+.xai-card-warning {
+  border-left: 4px solid var(--warning);
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.xai-card-danger {
+  border-left: 4px solid var(--danger);
+  background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.xai-card-success {
+  border-left: 4px solid var(--success);
+  background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+}
+
+/* Plan Comparison Radio/Card active states */
+.plan-card {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 2px solid #e2e8f0;
+  position: relative;
+}
+
+.plan-card:hover {
+  border-color: #93c5fd;
+  transform: translateY(-2px);
+}
+
+.plan-card.selected {
+  border-color: #2563eb;
+  background-color: #f8faff;
+  box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.15);
+}
+
+.plan-card.disabled-plan {
+  opacity: 0.85;
+  border-color: #f1f5f9;
+  background-color: #fafafa;
+}
+
+/* Digital Signature Canvas */
+#signatureCanvas {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background-color: #fafbfc;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Step wizard indicators */
+.step-dot {
+  width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  line-height: 1;
+}
+
+.step-dot.active {
+  background-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px #dbeafe;
+}
+
+.step-dot.completed {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.step-dot.inactive {
+  background-color: #e2e8f0;
+  color: #64748b;
+}
+
+/* Code & Formula Badges */
+.formula-box {
+  font-family: 'JetBrains Mono', monospace;
+  background-color: #0f172a;
+  color: #38bdf8;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+/* Floating AI Chat Assistant Drawer */
+.chat-drawer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 60;
+  max-height: 85%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-drawer.open {
+  transform: translateY(0);
+}
+
+/* Modals */
+.modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+}

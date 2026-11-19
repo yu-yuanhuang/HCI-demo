@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MicroLoan（微微貸）- 中低所得者AI小額借貸系統人機互動原型</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col antialiased">
+
+  <!-- ========================================== -->
+  <!-- 頂部全域功能列 (Top Global Navigation Bar) -->
+  <!-- ========================================== -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- 品牌 Logo 與專案資訊 -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center text-white font-extrabold text-lg shadow-md">
+          <i class="fa-solid fa-hand-holding-dollar"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-slate-900 text-lg tracking-tight">MicroLoan 微微貸</span>
+            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-semibold border border-blue-200">
+              AI 智慧人機互動原型
+            </span>
+          </div>
+          <p class="text-xs text-slate-500">智慧人機互動與使用介面研究作業一 ｜ 指導教授：陳志銘 ｜ 小組成員：黃裕元</p>
+        </div>
+      </div>
+
+      <!-- 視圖切換器 (前台 vs 後台 vs 規格) -->
+      <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+        <button id="btnViewMobile" onclick="app.switchViewMode('mobile')" class="px-3.5 py-1.5 rounded-lg bg-blue-600 text-white shadow transition flex items-center gap-1.5">
+          <i class="fa-solid fa-mobile-screen"></i>
+          <span>借款人行動前台</span>
+        </button>
+        <button id="btnViewDesktop" onclick="app.switchViewMode('desktop')" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-200 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-desktop"></i>
+          <span>案件審核管理後台</span>
+        </button>
+      </div>
+
+      <!-- 評審快捷測試情境選單 (Scenario Quick Launcher) -->
+      <div class="flex items-center gap-2">
+        <div class="relative">
+          <select id="scenarioSelector" onchange="app.loadScenario(this.value)" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 font-medium text-slate-800 focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
+            <option value="" disabled selected>🎯 選擇課程驗證測試情境...</option>
+            <option value="scenario_1_normal">情境一：林先生 50,000元 AI核准與三方案 (ML001)</option>
+            <option value="scenario_2_ocr_error">情境二：OCR 收入誤讀 (28k->18k) 修正與重算 (SIM-W02)</option>
+            <option value="scenario_3_human_triage">情境三：超過10萬 (120,000元) 分流人工審核 (ML002)</option>
+            <option value="scenario_4_rejected_appeal">情境四：80,000元 無法核貸與人工覆核申訴 (ML004)</option>
+            <option value="scenario_5_missing_docs">情境五：資料缺漏待補件 (30,000元) (ML003)</option>
+            <option value="scenario_6_repayment_close">情境六：還款與清償結案展示 (ML005 -> ML006)</option>
+          </select>
+        </div>
+
+        <!-- 規格抽屜按鈕 -->
+        <button onclick="app.openSpecDrawer()" class="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 flex items-center gap-1 shadow-sm transition" title="查看研究報告與文獻依據">
+          <i class="fa-solid fa-book-bookmark text-blue-600"></i>
+          <span>研究規範</span>
+        </button>
+
+        <!-- 重置模擬資料庫 -->
+        <button onclick="app.resetAllData()" class="px-2.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-lg border border-rose-200 flex items-center gap-1 shadow-sm transition" title="重置為初始12筆模擬案件">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>重置資料</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 主操作視圖 (Main Content Area)             -->
+  <!-- ========================================== -->
+  <main class="flex-1 flex flex-col justify-start">
+    
+    <!-- A. 行動借貸前台 (Mobile App Viewport) -->
+    <section id="mobileAppContainer" class="phone-viewport-container flex-1">
+      <div id="phoneMockup" class="phone-mockup">
+        
+        <!-- 手機瀏海與相機模擬 -->
+        <div class="phone-notch">
+          <div class="notch-speaker"></div>
+          <div class="notch-camera"></div>
+        </div>
+
+        <!-- 手機狀態列 (Status Bar) -->
+        <div class="phone-status-bar">
+          <span id="phoneClock" class="font-mono">19:30</span>
+          <div class="flex items-center gap-2 text-xs">
+            <i class="fa-solid fa-signal text-[11px]"></i>
+            <i class="fa-solid fa-wifi text-[11px]"></i>
+            <i class="fa-solid fa-battery-full text-emerald-600"></i>
+          </div>
+        </div>
+
+        <!-- 前台頂部快捷導覽步驟指示器 -->
+        <div class="bg-white px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+          <div class="flex items-center gap-1">
+            <button onclick="app.goToStep(1)" class="step-dot step-dot-item active cursor-pointer" title="步驟1：首頁與說明">1</button>
+            <span class="w-2.5 h-0.5 bg-slate-200"></span>
+            <button onclick="app.goToStep(2)" class="step-dot step-dot-item inactive cursor-pointer" title="步驟2：身分核實">2</button>
+            <span class="w-2.5 h-0.5 bg-slate-200"></span>
+            <button onclick="app.goToStep(3)" class="step-dot step-dot-item inactive cursor-pointer" title="步驟3：收支申請">3</button>
+            <span class="w-2.5 h-0.5 bg-slate-200"></span>
+            <button onclick="app.goToStep(4)" class="step-dot step-dot-item inactive cursor-pointer" title="步驟4：AI審核與進度">4</button>
+            <span class="w-2.5 h-0.5 bg-slate-200"></span>
+            <button onclick="app.goToStep(5)" class="step-dot step-dot-item inactive cursor-pointer" title="步驟5：方案比較">5</button>
+            <span class="w-2.5 h-0.5 bg-slate-200"></span>
+            <button onclick="app.goToStep(6)" class="step-dot step-dot-item inactive cursor-pointer" title="步驟6：契約簽署">6</button>
+            <span class="w-2.5 h-0.5 bg-slate-200"></span>
+            <button onclick="app.goToStep(7)" class="step-dot step-dot-item inactive cursor-pointer" title="步驟7：我的案件與還款">7</button>
+          </div>
+
+          <!-- 全螢幕 / 手機框 切換按鈕 -->
+          <button id="btnTogglePhoneFrame" onclick="app.togglePhoneFrame()" class="text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1">
+            <i class="fa-solid fa-expand"></i>
+            <span>全螢幕</span>
+          </button>
+        </div>
+
+        <!-- 手機螢幕捲動內容容器 (動態渲染) -->
+        <div id="phoneScreenContent" class="phone-screen-content p-4 bg-slate-50">
+          <div id="phoneStepContainer">
+            <!-- 由 app.renderMobileStep() 動態填入 -->
+          </div>
+        </div>
+
+        <!-- 懸浮 CUI 智慧小幫手對話抽屜 (Mixed-Initiative Assistant) -->
+        <div id="chatDrawer" class="chat-drawer">
+          <!-- 助理 Header -->
+          <div class="bg-slate-900 text-white p-3.5 flex items-center justify-between border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-robot"></i>
+              </div>
+              <div>
+                <span class="text-xs font-bold block">微微貸 AI 智慧助理</span>
+                <span class="text-[10px] text-emerald-400">● 混合主動對話支援 (Horvitz, 1999)</span>
+              </div>
+            </div>
+            <button onclick="app.toggleChatDrawer()" class="text-slate-400 hover:text-white">
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+          </div>
+
+          <!-- 對話訊息區域 -->
+          <div id="chatMessageContainer" class="flex-1 p-3 overflow-y-auto custom-scroll space-y-2 bg-slate-50 min-h-[200px]">
+            <div class="flex items-start gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs shrink-0 font-bold">
+                <i class="fa-solid fa-robot"></i>
+              </div>
+              <div class="bg-white border border-slate-200 text-slate-800 text-xs px-3 py-2 rounded-xl rounded-tl-none max-w-[85%] leading-relaxed shadow-sm">
+                您好！我是您的申貸小幫手。對於 40% 餘額上限、10萬元分流、或者三種還款方案的總利息差異有任何疑問，都可以隨時問我喔！
+              </div>
+            </div>
+          </div>
+
+          <!-- 快速提問 Pills -->
+          <div class="px-3 py-1.5 bg-slate-100 border-t border-slate-200 flex gap-1.5 overflow-x-auto whitespace-nowrap text-[11px]">
+            <button onclick="app.sendChatMessage('為什麼有40%餘額上限？')" class="px-2 py-1 bg-white border border-slate-200 rounded-full hover:bg-blue-50 text-slate-700">為什麼有40%餘額上限？</button>
+            <button onclick="app.sendChatMessage('長期方案和短期方案差在哪裡？')" class="px-2 py-1 bg-white border border-slate-200 rounded-full hover:bg-blue-50 text-slate-700">三方案差在哪裡？</button>
+            <button onclick="app.sendChatMessage('如果收入看錯了怎麼更正？')" class="px-2 py-1 bg-white border border-slate-200 rounded-full hover:bg-blue-50 text-slate-700">收入看錯如何更正？</button>
+            <button onclick="app.sendChatMessage('超過10萬為什麼要轉人工？')" class="px-2 py-1 bg-white border border-slate-200 rounded-full hover:bg-blue-50 text-slate-700">為何超過10萬轉人工？</button>
+          </div>
+
+          <!-- 對話輸入框 -->
+          <div class="p-2.5 bg-white border-t border-slate-200 flex items-center gap-2">
+            <input type="text" id="chatInput" placeholder="請輸入您的問題..." class="flex-1 text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-800">
+            <button onclick="app.sendChatMessage()" class="w-9 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center text-xs shadow transition">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 懸浮開啟助理按鈕 -->
+        <button onclick="app.toggleChatDrawer()" class="absolute bottom-5 right-5 z-40 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2.5 rounded-full shadow-lg flex items-center gap-1.5 transition transform hover:scale-105">
+          <i class="fa-solid fa-comments"></i>
+          <span>AI 諮詢小幫手</span>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- B. 桌面管理審核後台 (Desktop Admin Portal) -->
+    <section id="desktopAdminContainer" class="hidden flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+      <div class="space-y-6">
+
+        <!-- 後台 Header -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xl shadow">
+              <i class="fa-solid fa-shield-halved text-blue-400"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-lg font-bold text-slate-900">MicroLoan 微額信貸授信與風險管理後台</h1>
+                <span class="bg-blue-50 text-blue-700 font-mono text-xs px-2 py-0.5 rounded border border-blue-200">
+                  規則引擎 v0.1
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">授信專員：陳專員（Persona 審核角色） ｜ 權限角色：微額放款高級審查員</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="text-right text-xs">
+              <span class="text-slate-400 block">系統資料庫狀態</span>
+              <span class="font-bold text-emerald-600 flex items-center gap-1 justify-end">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                12 筆測試個案同步中
+              </span>
+            </div>
+            <button onclick="app.switchViewMode('mobile')" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg border border-blue-200 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-mobile-screen"></i>
+              <span>切換至借款人前台</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard 指標卡片群 (嚴格落實作業報告第9頁之統計口徑) -->
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-semibold text-slate-500 block">期間進案總量 (事件)</span>
+            <div id="metricTotalSubmissions" class="text-2xl font-extrabold font-mono text-slate-900 mt-1">12</div>
+            <span class="text-[10px] text-slate-400">非存量相加</span>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-semibold text-blue-700 block">目前執行中 (履約)</span>
+            <div id="metricActiveLoans" class="text-2xl font-extrabold font-mono text-blue-600 mt-1">3</div>
+            <span class="text-[10px] text-slate-400">正常分期還款</span>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-semibold text-emerald-700 block">已全額結案 (清償)</span>
+            <div id="metricClosedLoans" class="text-2xl font-extrabold font-mono text-emerald-600 mt-1">2</div>
+            <span class="text-[10px] text-slate-400">已頒發清償憑證</span>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-semibold text-indigo-700 block">累計開案數 (存量)</span>
+            <div id="metricOpenedLoans" class="text-2xl font-extrabold font-mono text-indigo-600 mt-1">5</div>
+            <span class="text-[10px] text-indigo-500">= 執行中3 + 結案2</span>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-semibold text-amber-700 block">待專員審查 (超額)</span>
+            <div id="metricPendingReview" class="text-2xl font-extrabold font-mono text-amber-600 mt-1">2</div>
+            <span class="text-[10px] text-amber-600">>10萬元分流件</span>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-[11px] font-semibold text-orange-700 block">待申請人補件</span>
+            <div id="metricMissingDocs" class="text-2xl font-extrabold font-mono text-orange-600 mt-1">2</div>
+            <span class="text-[10px] text-orange-500">缺收入或照片模糊</span>
+          </div>
+        </div>
+
+        <!-- 分流統計與風險評級分析列 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <h2 class="text-xs font-bold text-slate-800 flex items-center justify-between">
+              <span><i class="fa-solid fa-code-branch text-blue-600 mr-1"></i>核貸分流佔比 (10萬門檻)</span>
+              <span class="text-[11px] text-slate-400">12案總計</span>
+            </h2>
+            <div class="space-y-1.5 text-xs">
+              <div class="flex justify-between items-center">
+                <span class="text-slate-600">AI 快速決策 (&le;10萬)：</span>
+                <strong id="statAiCount" class="font-mono text-blue-600 font-bold">10 案 (83%)</strong>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div class="bg-blue-600 h-full" style="width: 83.3%"></div>
+              </div>
+              <div class="flex justify-between items-center pt-1">
+                <span class="text-slate-600">專員人工審查 (&gt;10萬)：</span>
+                <strong id="statHumanCount" class="font-mono text-amber-600 font-bold">2 案 (17%)</strong>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div class="bg-amber-500 h-full" style="width: 16.7%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <h2 class="text-xs font-bold text-slate-800 flex items-center justify-between">
+              <span><i class="fa-solid fa-shield-virus text-emerald-600 mr-1"></i>40% 安全現金流保護監控</span>
+              <span class="text-[11px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">正常運作</span>
+            </h2>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              系統嚴格監控 R = I - E - D 之收支安全線。全批次中無任何一案違規放行超過 40% 餘額門檻之高風險方案。
+            </p>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <h2 class="text-xs font-bold text-slate-800 flex items-center justify-between">
+              <span><i class="fa-solid fa-user-check text-indigo-600 mr-1"></i>防自動化偏誤機制</span>
+              <span class="text-[11px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">強制輸入理由</span>
+            </h2>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              依 Černevičienė (2024) 規範，人工專員若推翻或核准 AI 建議，均強制填寫實質決策理由並寫入不可篡改日誌。
+            </p>
+          </div>
+        </div>
+
+        <!-- 案件管理表格區塊 -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          
+          <!-- 表格上方篩選控制列 -->
+          <div class="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <h2 class="font-bold text-slate-900 text-sm">全案件授信審查清單</h2>
+              <span class="text-xs text-slate-400">（共 12 筆模擬資料）</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-slate-500">狀態篩選：</label>
+              <select onchange="app.renderDesktopCaseList(this.value)" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 focus:ring-2 focus:ring-blue-500">
+                <option value="ALL">全部狀態 (12)</option>
+                <option value="審核中">審核中（待人工專員）</option>
+                <option value="待補件">待補件</option>
+                <option value="已核准待簽署">已核准待簽署</option>
+                <option value="執行中">執行中（履約還款）</option>
+                <option value="結案">結案（已清償）</option>
+                <option value="無法核貸">無法核貸</option>
+                <option value="已撤回">已撤回</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 資料表 -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
+                <tr>
+                  <th class="px-4 py-3">案件編號</th>
+                  <th class="px-4 py-3">申請人 (遮罩)</th>
+                  <th class="px-4 py-3">申貸金額</th>
+                  <th class="px-4 py-3">分流機制</th>
+                  <th class="px-4 py-3">可用餘額 (R)</th>
+                  <th class="px-4 py-3">案件狀態</th>
+                  <th class="px-4 py-3">進件時間</th>
+                  <th class="px-4 py-3">管理操作</th>
+                </tr>
+              </thead>
+              <tbody id="caseTableBody" class="divide-y divide-slate-100">
+                <!-- 由 app.renderDesktopCaseList() 動態填入 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 稽核日誌與歷程追蹤表 (Audit Log) -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left text-blue-600"></i> 全系統稽核操作紀錄日誌（Audit Trail）
+            </h2>
+            <span class="text-xs text-slate-400">符合非功能需求之決策追溯原則</span>
+          </div>
+
+          <div class="overflow-x-auto max-h-60 overflow-y-auto custom-scroll">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+                <tr>
+                  <th class="px-3 py-2.5">記錄時間</th>
+                  <th class="px-3 py-2.5">操作者 / 模組</th>
+                  <th class="px-3 py-2.5">目標案件</th>
+                  <th class="px-3 py-2.5">操作類型</th>
+                  <th class="px-3 py-2.5">詳細說明與決策依據</th>
+                </tr>
+              </thead>
+              <tbody id="auditLogTableBody">
+                <!-- 由 app.renderAuditLogs() 動態填入 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 彈出視窗與抽屜 (Modals & Drawers)          -->
+  <!-- ========================================== -->
+
+  <!-- 1. 後台案件審核與決策抽屜 Modal (#caseReviewModal) -->
+  <div id="caseReviewModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto custom-scroll">
+      <div id="caseReviewModalContent">
+        <!-- 由 app.openCaseDetail() 動態渲染 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 前台收入誤讀修正 Modal (SIM-W02 / #correctionModal) -->
+  <div id="correctionModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-pen-to-square text-blue-600"></i> 更正收支資料（SIM-W02 驗證）
+        </h3>
+        <button onclick="app.closeCorrectionModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-600 leading-relaxed">
+        情境模擬：存摺 OCR 影像模糊，將原月收入 28,000 元誤讀為 18,000 元。請在下方輸入正確金額並重啟評估。
+      </p>
+
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500">原辨識讀取數值：</span>
+          <span id="oldIncomeDisplay" class="font-mono font-bold text-rose-600 line-through">NT$ 18,000</span>
+        </div>
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">更正後真實月收入 (I)：</label>
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-slate-400">NT$</span>
+            <input type="number" id="correctIncomeInput" value="28000" class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono font-bold text-slate-800">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="app.closeCorrectionModal()" class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50">
+          取消
+        </button>
+        <button onclick="app.saveCorrection()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow transition">
+          確認更正並重新試算
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 前台人工覆核申訴 Modal (SIM-I04 / ML004 / #appealModal) -->
+  <div id="appealModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-hand-holding-hand text-blue-600"></i> 申請人工專員覆核與異議受理
+        </h3>
+        <button onclick="app.closeAppealModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-600 leading-relaxed">
+        若您因季節性接案、親友共同分攤支出、或有額外未列載之現金收入，可提出人工覆核。案件將直連後台專員工作台，不產生重複進件。
+      </p>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">請填寫異議說明或補充條件：</label>
+        <textarea id="appealReasonText" rows="3" placeholder="例如：我下個月有確定之工程款 35,000 元入帳，附上客戶訂單合約..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-800"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-1">
+        <button onclick="app.closeAppealModal()" class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50">
+          取消
+        </button>
+        <button onclick="app.submitAppeal()" class="px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-lg text-xs font-bold shadow transition">
+          送出覆核申請
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 專案需求與 HCI 研究規格 Drawer (#specDrawer) -->
+  <div id="specDrawer" class="hidden fixed inset-0 z-50 modal-backdrop flex justify-end">
+    <div class="bg-white w-full max-w-2xl h-full shadow-2xl p-6 overflow-y-auto custom-scroll space-y-6 fade-in">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">智慧人機互動作業一規格書與理論依據</h2>
+          <p class="text-xs text-slate-500">國立臺灣師範大學 ｜ 指導教授：陳志銘 ｜ 成員：黃裕元</p>
+        </div>
+        <button onclick="app.closeSpecDrawer()" class="text-slate-400 hover:text-slate-600 text-xl">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- 核心論文與文獻依據 -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-book-open text-blue-600"></i> HCI 學術文獻與理論依據
+        </h3>
+        <div class="space-y-2 text-xs text-slate-600 leading-relaxed">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <strong class="text-slate-800 block">Amershi et al. (2019) Guidelines for Human-AI Interaction (CHI)</strong>
+            <span>本系統嚴格落實 G1（初次使用說明能力與限制）、G2（呈現核貸評估條件依據）、G9（支援高效更正，如 OCR 誤讀即時修正）與 G11（遇異常脈絡時平緩退避轉交真人）。</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <strong class="text-slate-800 block">Horvitz (1999) Principles of Mixed-Initiative User Interfaces</strong>
+            <span>前台以 GUI 為主，輔以非侵入式 CUI 助理；使用者享有最高掌控感，系統主動操作僅限於提示與核算，絕不自動扣款或擅自締結契約。</span>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <strong class="text-slate-800 block">Černevičienė &amp; Kabašinskas (2024) / Maathuis et al. (2026) 金融 XAI 研究</strong>
+            <span>針對終端借款人提供透明收支計算（R = I - E - D 與 40% 限額）與三方案成本對照；針對審核端提供資料來源、未確認項目及防自動化偏誤的強制裁決理由欄。</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2026 政府中低收入界定表格 -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-table-list text-blue-600"></i> 2026 年雙北市中低收入基準界定
+        </h3>
+        <table class="w-full text-xs text-left border-collapse border border-slate-200">
+          <thead class="bg-slate-100 text-slate-700">
+            <tr>
+              <th class="p-2 border border-slate-200">地區</th>
+              <th class="p-2 border border-slate-200">低收入戶上限</th>
+              <th class="p-2 border border-slate-200">中低收入戶上限</th>
+              <th class="p-2 border border-slate-200">動產 / 不動產限額</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-600">
+            <tr>
+              <td class="p-2 border border-slate-200 font-bold">臺北市</td>
+              <td class="p-2 border border-slate-200">20,744 元/月</td>
+              <td class="p-2 border border-slate-200">29,635 元/月</td>
+              <td class="p-2 border border-slate-200">每人動產16萬 / 戶不動產992萬</td>
+            </tr>
+            <tr>
+              <td class="p-2 border border-slate-200 font-bold">新北市</td>
+              <td class="p-2 border border-slate-200">17,750 元/月</td>
+              <td class="p-2 border border-slate-200">26,625 元/月</td>
+              <td class="p-2 border border-slate-200">每人動產15萬 / 戶不動產708萬</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Persona 描述 -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-users-viewfinder text-blue-600"></i> Persona 人物誌設定
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-200 space-y-1">
+            <strong class="text-blue-900 block font-bold">主要 Persona：林先生 (32歲)</strong>
+            <p class="text-slate-600">外送按件計酬，租屋無不動產。家庭平均24,000元符合新北標準。月入28,000，支出18,000，債務2,000，可用餘額8,000元。申貸50,000元週轉。</p>
+          </div>
+          <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-200 space-y-1">
+            <strong class="text-amber-900 block font-bold">次要 Persona：陳專員 (35歲)</strong>
+            <p class="text-slate-600">微額信貸授信資深審查員。負責超過10萬元案件審查、補件核對與申訴裁決。需查驗AI依據並填寫實質決策理由防範自動化偏誤。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 三方案計算公式 -->
+      <div class="space-y-2">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+          <i class="fa-solid fa-calculator text-blue-600"></i> 金融還款數學模型 (PMT)
+        </h3>
+        <div class="formula-box text-xs space-y-1">
+          <div>月利率 r = 0.06 / 12 = 0.005 (固定年利率 6%)</div>
+          <div>月攤還 M = P × r / [1 - (1+r)^(-n)]</div>
+          <div>餘額 R = I - E - D | 安全上限 = 40% × R</div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200">
+        <button onclick="app.closeSpecDrawer()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs transition">
+          關閉研究規格說明
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 通用 Toast 提示組件 -->
+  <div id="toastNotification" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900/90 backdrop-blur text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-300 opacity-0 translate-y-4 pointer-events-none">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastText">訊息已更新</span>
+  </div>
+
+  <!-- JavaScript 模組載入 -->
+  <script src="js/data.js"></script>
+  <script src="js/loanCalc.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
